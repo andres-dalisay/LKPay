@@ -1,0 +1,22 @@
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY 'meridian'
+
+CREATE DATABASE lkpay;
+
+create table Accounts(
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    rfid_uid VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    bal DECIMAL(7,2) NOT NULL,
+    registered TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
+create table Transactions(
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
+    rfid_uid VARCHAR(255),
+    trans_amt DECIMAL(7,2) NOT NULL,
+    acct_netbal DECIMAL(7,2) NOT NULL,
+    trans_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (rfid_uid) REFERENCES Accounts(rfid_uid)
+);
