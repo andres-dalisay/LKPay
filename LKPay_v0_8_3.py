@@ -50,21 +50,36 @@ def pay():
                 print("Place ID card to cash-in.")
                 rfid_uid, text = reader.read()
                 
-                cur.execute("UPDATE Accounts SET bal=bal-" + str(payment_amount) + " WHERE rfid_uid=" + str(rfid_uid))
+                
                 cur.execute("SELECT name, bal FROM Accounts WHERE rfid_uid =" + str(rfid_uid))
                 name, c_total_bal = cur.fetchone()
-                cur.execute("INSERT INTO Transactions(rfid_uid, trans_amt, acct_netbal) SELECT rfid_uid, -" + str(payment_amount) + ", " + str(c_total_bal) + " FROM Accounts WHERE rfid_uid=" + str(rfid_uid))
-                db.commit()
                 
-                time.sleep(1)
-                
-                print ("Deducted P" + str(payment_amount) + " from " + str(name) + ". Remaining balance is P" + str(c_total_bal) + ".")
-                lcd.clear()
-                lcd.message = "-P" + str(payment_amount) + " from\n" + str(name)
-                time.sleep(2)            
-                lcd.clear()
-                lcd.message = "Remaining bal:\nP" + str(c_total_bal)
-                time.sleep(3)
+                if c_total_bal < payment_amount:
+                    print("Error: Insufficient balance. Need P" + str(float(payment_amount) - float(c_total_bal)) + " more.")
+                    lcd.clear()
+                    lcd.message = "Insufficient\nbalance."
+                    time.sleep(1)
+                    lcd.clear()
+                    lcd.message = "Need \nP" + str(float(payment_amount) - float(c_total_bal)) + " more."
+                    time.sleep(3)
+                    
+                else:
+                    cur.execute("UPDATE Accounts SET bal=bal-" + str(payment_amount) + " WHERE rfid_uid=" + str(rfid_uid))
+                    cur.execute("INSERT INTO Transactions(rfid_uid, trans_amt, acct_netbal) SELECT rfid_uid, -" + str(payment_amount) + ", " + str(c_total_bal) + " FROM Accounts WHERE rfid_uid=" + str(rfid_uid))
+                    db.commit()
+                    
+                    cur.execute("SELECT bal FROM Accounts WHERE rfid_uid =" + str(rfid_uid))
+                    c_total_bal = cur.fetchone()
+                    
+                    time.sleep(1)
+                    
+                    print ("Deducted P" + str(payment_amount) + " from " + str(name) + ". Remaining balance is P" + str(c_total_bal[0]) + ".")
+                    lcd.clear()
+                    lcd.message = "-P" + str(payment_amount) + " from\n" + str(name)
+                    time.sleep(2)            
+                    lcd.clear()
+                    lcd.message = "Remaining bal:\nP" 
+                    time.sleep(3)
                 
             finally:
                 print("Goodbye and thank you!")
@@ -182,15 +197,21 @@ def checkbal():
     try:
         lcd.clear()
         lcd.message = "Place card to\ncheck balance"
-        print("Place ID card to check balance.")
-        
+        print("Place ID card to check balance.")        
         id, text = reader.read()
+        
+        time.sleep(1)
+        
         cur.execute("SELECT bal FROM Accounts WHERE rfid_uid=" + str(id))
         bal_check = cur.fetchone()
-        print(bal_check)
+        print("You have P" + str(bal_check[0]) + " left.")
+        lcd.clear()
+        lcd.message = "You have\nP" + str(bal_check[0]) + " left."
+        
+        time.sleep(3)
     
     finally:
-        print("OK")
+        print()
     
 while True:
     lcd.clear()
@@ -223,6 +244,7 @@ while True:
 
     finally:    
         print("-----------------")
+
 
 
 
