@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 
-import sys
-import time
-import RPi.GPIO as GPIO
+import sys, time, RPi.GPIO as GPIO, mysql.connector, board, digitalio, adafruit_character_lcd.character_lcd as LCD
 from mfrc522 import SimpleMFRC522
-import mysql.connector
-import board
-import digitalio
-import adafruit_character_lcd.character_lcd as LCD
 
 db = mysql.connector.connect(
     host="localhost",
@@ -36,6 +30,7 @@ def pay():
         lcd.message = "Input payment\namount:"
         lcd.blink = True
         payment_amount = float(input("Input payment amount:"))
+        assert(payment_amount > 0)
         lcd.blink = False
         
         lcd.clear()
@@ -49,6 +44,7 @@ def pay():
                 lcd.message = "Place ID card to\ncash-in."
                 print("Place ID card to cash-in.")
                 rfid_uid, text = reader.read()
+                time.sleep(0.5)
                 
                 
                 cur.execute("SELECT name, bal FROM Accounts WHERE rfid_uid =" + str(rfid_uid))
@@ -61,7 +57,7 @@ def pay():
                     time.sleep(1)
                     lcd.clear()
                     lcd.message = "Need \nP" + str(float(payment_amount) - float(c_total_bal)) + " more."
-                    time.sleep(3)
+                    time.sleep(2.5)
                     
                 else:
                     cur.execute("UPDATE Accounts SET bal=bal-" + str(payment_amount) + " WHERE rfid_uid=" + str(rfid_uid))
@@ -79,10 +75,10 @@ def pay():
                     time.sleep(2)            
                     lcd.clear()
                     lcd.message = "Remaining bal:\nP" 
-                    time.sleep(3)
+                    time.sleep(2.5)
                 
             finally:
-                print("Goodbye and thank you!")
+                print()
         
         else:
             print("Payment cancelled.")
@@ -105,7 +101,7 @@ def cash_in():
         
         lcd.clear()
         lcd.message = "P" + str(reload_amount) + " cash-in.\nProceed? 1 = Yes"
-        print("P", reload_amount, "will be added to the customer\\")
+        print("P", reload_amount, "will be added to the customer")
         ans = input("Proceed with cash-in? (1 is Yes): ")
         
         if ans == "1":
@@ -114,6 +110,7 @@ def cash_in():
                 lcd.message = "Place ID card to\ncash-in."
                 print("Place ID card to cash-in.")
                 rfid_uid, text = reader.read()
+                time.sleep(0.5)
                 
                 cur.execute("UPDATE Accounts SET bal=bal+" + str(reload_amount) + " WHERE rfid_uid=" + str(rfid_uid))
                 cur.execute("SELECT name, bal FROM Accounts WHERE rfid_uid =" + str(rfid_uid))
@@ -129,10 +126,10 @@ def cash_in():
                 time.sleep(2)            
                 lcd.clear()
                 lcd.message = "Current bal:\nP" + str(c_total_bal)
-                time.sleep(3)
+                time.sleep(2.5)
                 
             finally:
-                print("Goodbye and thank you!")
+                print()
         
     except:
         print("\nInvalid input.")
@@ -141,57 +138,82 @@ def cash_in():
         time.sleep(1)
             
 def register():
-    lcd.clear()
-    lcd.message = "Proceed with\nreg? 1 = Yes"
-    ans = input("Proceed with registration? (1 is Yes): ")
-    
-    if ans == "1":
-        try:
-            lcd.clear()
-            lcd.message = "Place card to \nregister"
-            print("Place ID card to register.")
-            id, text = reader.read()
-            cur.execute("SELECT id FROM Accounts WHERE rfid_uid=" + str(id))
-            cur.fetchone()
-            
-            if cur.rowcount >= 1:
-                lcd.clear()
-                lcd.message = "Overwrite\nuser? (Y/N)"
-                print("Overwrite\nexisting user?")
-                overwrite = input("Overwrite (Y/N)? ")
-                
-                if overwrite[0] == "Y" or overwrite[0] == "y":
-                    lcd.clear()
-                    lcd.message = "Overwriting user."
-                    print("Overwriting user.")
-                    time.sleep(1)
-                    sql_insert = "UPDATE Accounts SET name = %s WHERE rfid_uid=%s"
-            else:
-                sql_insert = "INSERT INTO Accounts (name, rfid_uid, bal) VALUES (%s, %s, 0.0)"
-            
-            lcd.clear()
-            lcd.message = "Enter new name"
-            print("Enter new name")
-            new_name = input("Name: ")
-            
-            cur.execute(sql_insert, (new_name, id))
-            db.commit()
-
-            lcd.clear()
-            lcd.message = "User saved:\n<" + new_name + ">"
-            print("User <" + new_name + "> Saved")
-            time.sleep(1)
-        
-        finally:
-            time.sleep(1)
-            lcd.clear()
-            lcd.message = "Goodbye and \nthank you!"
-            print("Goodbye and thank you!")
-    else:
-        print('Registration cancelled.')
+    try:
         lcd.clear()
-        lcd.message = 'Registration \ncancelled.'
-        time.sleep(1.5)
+        lcd.message = "Proceed with\nreg? 1 = Yes"
+        ans = input("Proceed with registration? (1 is Yes): ")
+        
+        if ans == "1":
+            try:
+                lcd.clear()
+                lcd.message = "Place card to \nregister"
+                print("Place ID card to register.")
+                id, text = reader.read()
+                time.sleep(0.5)
+                
+                cur.execute("SELECT id FROM Accounts WHERE rfid_uid=" + str(id))
+                cur.fetchone()
+                
+                if cur.rowcount >= 1:
+                    lcd.clear()
+                    lcd.message = "Overwrite\nuser? (Y/N)"
+                    print("Overwrite\nexisting user?")
+                    overwrite = input("Overwrite (Y/N)? ")
+                    
+                    if overwrite[0] == "Y" or overwrite[0] == "y":
+                        lcd.clear()
+                        lcd.message = "Overwriting user."
+                        print("Overwriting user.")
+                        time.sleep(1)
+                        sql_insert = "UPDATE Accounts SET name = %s WHERE rfid_uid=%s"
+                        
+                        lcd.clear()
+                        lcd.message = "Enter new name"
+                        print("Enter new name")
+                        new_name = input("Name: ")
+                        
+                        cur.execute(sql_insert, (new_name, id))
+                        db.commit()
+
+                        lcd.clear()
+                        lcd.message = "User saved:\n<" + new_name + ">"
+                        print("User <" + new_name + "> Saved")
+                        time.sleep(2.5)
+                        
+                    elif overwrite[0] == "N" or overwrite[0] == "n":
+                        lcd.clear()
+                        lcd.message = "Overwrite\ncancelled."
+                        print("Overwrite cancelled.")
+                        time.sleep(1)
+                        
+                else:
+                    sql_insert = "INSERT INTO Accounts (name, rfid_uid, bal) VALUES (%s, %s, 0.0)"
+                
+                    lcd.clear()
+                    lcd.message = "Enter new name"
+                    print("Enter new name")
+                    new_name = input("Name: ")
+                    
+                    cur.execute(sql_insert, (new_name, id))
+                    db.commit()
+
+                    lcd.clear()
+                    lcd.message = "User saved:\n<" + new_name + ">"
+                    print("User <" + new_name + "> Saved")
+                    time.sleep(2.5)
+            
+            finally:
+                print()
+        else:
+            print('Registration cancelled.')
+            lcd.clear()
+            lcd.message = 'Registration \ncancelled.'
+            time.sleep(1.5)
+    except:
+        print("\nInvalid input.")
+        lcd.clear()
+        lcd.message = "Invalid input.\nPlease try again."
+        time.sleep(1)
 
 def checkbal():
     try:
@@ -200,15 +222,17 @@ def checkbal():
         print("Place ID card to check balance.")        
         id, text = reader.read()
         
-        time.sleep(1)
+        time.sleep(0.5)
         
         cur.execute("SELECT bal FROM Accounts WHERE rfid_uid=" + str(id))
-        bal_check = cur.fetchone()
-        print("You have P" + str(bal_check[0]) + " left.")
+        bal = cur.fetchone()
+        cur.execute("SELECT name FROM Accounts WHERE rfid_uid=" + str(id))
+        name = cur.fetchone()
+        print(str(name[0]) + ":\nP" + str(bal[0]))
         lcd.clear()
-        lcd.message = "You have\nP" + str(bal_check[0]) + " left."
+        lcd.message = str(name[0]) + ":\nP" + str(bal[0])
         
-        time.sleep(3)
+        time.sleep(2.5)
     
     finally:
         print()
@@ -243,8 +267,4 @@ while True:
             print("Invalid input")
 
     finally:    
-        print("-----------------")
-
-
-
-
+        print("-----------------\n")
