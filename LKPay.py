@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, time, RPi.GPIO as GPIO, mysql.connector, board, digitalio, adafruit_character_lcd.character_lcd as LCD
+import sys, time, RPi.GPIO as GPIO, mysql.connector, board, digitalio, adafruit_character_lcd.character_lcd as LCD, curses
 from mfrc522 import SimpleMFRC522
 
 db = mysql.connector.connect(
@@ -24,6 +24,19 @@ lcd_columns = 16
 lcd_rows = 2
 lcd = LCD.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows)
 
+def input_c(message):
+    try:
+        win = curses.initscr()
+        win.addstr(0, 0, message)
+        while True: 
+            ch = win.getch()
+            if ch in range(32, 127): 
+                break
+            time.sleep(0.05)
+    finally:
+        curses.endwin()
+    return chr(ch)
+
 def pay():
     try:
         lcd.clear()
@@ -36,9 +49,9 @@ def pay():
         lcd.clear()
         lcd.message = "P" + str(payment_amount) + " payment.\nProceed? 1 = Yes"
         print("P", payment_amount, "is the amount for payment.")
-        ans = input("Proceed with payment? (1 is Yes): ")
+        c = input_c("Proceed with payment? (1 is Yes): ")
         
-        if ans == "1":
+        if c == "1":
             try:
                 lcd.clear()
                 lcd.message = "Place ID card to\ncash-in."
@@ -74,7 +87,7 @@ def pay():
                     lcd.message = "-P" + str(payment_amount) + " from\n" + str(name)
                     time.sleep(2)            
                     lcd.clear()
-                    lcd.message = "Remaining bal:\nP" 
+                    lcd.message = "Remaining bal:\nP" + str(c_total_bal[0])
                     time.sleep(2.5)
                 
             finally:
@@ -97,14 +110,15 @@ def cash_in():
         lcd.message = "Input reload\namount:"
         lcd.blink = True
         reload_amount = float(input("Input reload amount: "))
+        assert(reload_amount > 0)
         lcd.blink = False
         
         lcd.clear()
         lcd.message = "P" + str(reload_amount) + " cash-in.\nProceed? 1 = Yes"
         print("P", reload_amount, "will be added to the customer")
-        ans = input("Proceed with cash-in? (1 is Yes): ")
+        c = input_c("Proceed with cash-in? (1 is Yes): ")
         
-        if ans == "1":
+        if c == "1":
             try:
                 lcd.clear()
                 lcd.message = "Place ID card to\ncash-in."
@@ -141,9 +155,9 @@ def register():
     try:
         lcd.clear()
         lcd.message = "Proceed with\nreg? 1 = Yes"
-        ans = input("Proceed with registration? (1 is Yes): ")
+        c = input_c("Proceed with registration? (1 is Yes): ")
         
-        if ans == "1":
+        if c == "1":
             try:
                 lcd.clear()
                 lcd.message = "Place card to \nregister"
@@ -158,7 +172,7 @@ def register():
                     lcd.clear()
                     lcd.message = "Overwrite\nuser? (Y/N)"
                     print("Overwrite\nexisting user?")
-                    overwrite = input("Overwrite (Y/N)? ")
+                    overwrite = input_c("Overwrite (Y/N)? ")
                     
                     if overwrite[0] == "Y" or overwrite[0] == "y":
                         lcd.clear()
@@ -240,29 +254,19 @@ def checkbal():
 while True:
     lcd.clear()
     lcd.message = "1     2      3 \nPay   Load   Bal"
-    print("Select operation.")
-    print("1. Payment\n2. Load\n3. Check Balance\n4. Register")
-
-    choice = input("Enter choice (1/2/3/4): ")
+    c = input_c("Select operation.\n1. Payment\n2. Load\n3. Check Balance\n0. Register (Keyboard required to input name!)\nEnter choice (1/2/3/4): ")
     try:
-        if choice == "1":
+        if c == "1":
             pay()
 
-        elif choice == "2":
+        elif c == "2":
             cash_in()
 
-        elif choice == "3":
+        elif c == "3":
             checkbal()
         
-        elif choice == "4":
-            register()
-        
-        elif choice == "000":
-            lcd.clear()
-            lcd.message = "Goodbye!"
-            time.sleep(1)
-            lcd.clear()
-            sys.exit()
+        elif c == "0":
+            register()     
         else:
             print("Invalid input")
 
