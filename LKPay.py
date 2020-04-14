@@ -99,9 +99,9 @@ def pay():
             lcd.message = "Payment \ncancelled."
             time.sleep(1.5)
     except:
-        print("\nInvalid input.")
+        print("\nAn exception has occured Please try again.")
         lcd.clear()
-        lcd.message = "Invalid input.\nPlease try again."
+        lcd.message = "Excptn occured.\nPlease try again."
         time.sleep(1)
             
 def cash_in():
@@ -146,9 +146,9 @@ def cash_in():
                 print()
         
     except:
-        print("\nInvalid input.")
+        print("\nAn exception has occured Please try again.")
         lcd.clear()
-        lcd.message = "Invalid input.\nPlease try again."
+        lcd.message = "Excptn occured.\nPlease try again."
         time.sleep(1)
             
 def register():
@@ -224,9 +224,9 @@ def register():
             lcd.message = 'Registration \ncancelled.'
             time.sleep(1.5)
     except:
-        print("\nInvalid input.")
+        print("\nAn exception has occured Please try again.")
         lcd.clear()
-        lcd.message = "Invalid input.\nPlease try again."
+        lcd.message = "Excptn occured.\nPlease try again."
         time.sleep(1)
 
 def checkbal():
@@ -248,6 +248,12 @@ def checkbal():
         
         time.sleep(2.5)
     
+    except:
+        print("\nAn exception has occured Please try again.")
+        lcd.clear()
+        lcd.message = "Excptn occured.\nPlease try again."
+        time.sleep(1)
+        
     finally:
         print()
     
@@ -270,5 +276,11 @@ while True:
         else:
             print("Invalid input")
 
+    except:
+        print("\nAn exception has occured Please try again.")
+        lcd.clear()
+        lcd.message = "Excptn occured.\nPlease try again."
+        time.sleep(1)
+        
     finally:    
         print("-----------------\n")
