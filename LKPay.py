@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 #A few parts of this code was adapted from this RFID Attendance System by Emmet Young of PiMyLifeUp: https://pimylifeup.com/raspberry-pi-rfid-attendance-system/
+#test
 import sys, time, RPi.GPIO as GPIO, mysql.connector, board, digitalio, adafruit_character_lcd.character_lcd as LCD, curses
 from mfrc522 import SimpleMFRC522
 
